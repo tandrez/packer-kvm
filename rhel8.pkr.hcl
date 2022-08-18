@@ -16,7 +16,7 @@ variable "destination_server" {
 
 variable "disk_size" {
   type    = string
-  default = "40000"
+  default = "10000"
 }
 
 variable "headless" {
@@ -26,12 +26,12 @@ variable "headless" {
 
 variable "iso_checksum" {
   type    = string
-  default = "sha256:10edaf029513bd18150f1f39b5122ced0b04fa7762d6d82f800cc210e89e5f7d"
+  default = "sha256:8cb0dfacc94b789933253d5583a2fb7afce26d38d75be7c204975fe20b7bdf71"
 }
 
 variable "iso_url" {
   type    = string
-  default = "https://developers.redhat.com/content-gateway/file/rhel-8.6-x86_64-dvd.iso"
+  default = "/iso/rhel-8.6-x86_64-dvd.iso"
 }
 
 variable "name" {
@@ -61,7 +61,7 @@ variable "version" {
 
 source "qemu" "rhel8" {
   accelerator      = "kvm"
-  boot_command     = ["<up><wait><tab><wait> net.ifnames=0 biosdevname=0 text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/http/${var.config_file}<enter><wait>"]
+  boot_command     = ["<up><wait><tab><wait> net.ifnames=0 biosdevname=0 text inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/http/${var.config_file}<enter><wait>"]
   boot_wait        = "40s"
   disk_cache       = "none"
   disk_compression = true
@@ -85,19 +85,4 @@ source "qemu" "rhel8" {
 
 build {
   sources = ["source.qemu.rhel8"]
-
-  provisioner "shell" {
-    execute_command = "{{ .Vars }} sudo -E bash '{{ .Path }}'"
-    inline          = ["dnf -y install python3 python3-pip", "python3 -m pip install pip --upgrade", "python3 -m pip install ansible"]
-  }
-
-  provisioner "ansible-local" {
-    playbook_dir  = "ansible"
-    playbook_file = "ansible/playbook.yml"
-  }
-
-  post-processor "shell-local" {
-    environment_vars = ["IMAGE_NAME=${var.name}", "IMAGE_VERSION=${var.version}", "DESTINATION_SERVER=${var.destination_server}"]
-    script           = "scripts/push-image.sh"
-  }
 }
